@@ -1,0 +1,15 @@
+{
+  "name": "kyn-manager",
+  "version": "1.0.0",
+  "description": "A littlke bot that helps me manage my business.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Florian Lepage*",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^13.6.0",
+    "mysql2": "^2.3.3"
+  }
+}
