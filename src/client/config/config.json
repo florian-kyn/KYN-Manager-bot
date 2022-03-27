@@ -1,0 +1,14 @@
+{
+  "discord": {
+    "token": "NzU5NDAyMDU3NzE4OTU2MDMz.X28-Rw.pEkNc93kibV9XLfGXh4IBm1dcqQ",
+    "prefix": "!"
+  },
+
+  "database": {
+    "username": "root",
+    "database": "kyn_manager",
+    "password": "123456789",
+    "host": "localhost",
+    "port": "3306"
+  }
+}
