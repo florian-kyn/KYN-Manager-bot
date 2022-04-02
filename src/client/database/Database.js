@@ -36,23 +36,13 @@ class Database {
         });
     }
 
-    tableCheckCreation() { // methode to create all the required mysql tables
-        this.connection().getConnection((err, conn) => {
-            if(err) throw err;
+    query(conn, query) {
+        return new Promise((resolve, reject) => {
+            const result = conn.query(query, function (err, result, fields) {
+                if (err) throw err;
 
-            const query = (query) => {
-                return new Promise((resolve, reject) => {
-                    const result = conn.query(query, function (err, result, fields) {
-                        if (err) throw err;
-
-                        result ? resolve(result) : reject();
-                    });
-                });
-            }
-
-
-
-            this.connection().releaseConnection(conn);
+                result ? resolve(result) : reject();
+            });
         });
     }
 }
