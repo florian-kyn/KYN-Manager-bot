@@ -6,30 +6,15 @@ const config = require("./config/config.json");
 
 //Libs imports
 const { RevenuesManager } =  require("./components/RevenuesManager.js");
+const { CommandsLoader } = require("./components/CommandsLoader.js");
+const { SQLTablesManager } = require("./components/SQLTablesManager.js");
 const { Database } = require("./database/Database.js");
-
-
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
     new Database(config).checkConnectionState();
-
-    let guildId = "437634186828972033";
-    let guild = client.guilds.cache.get(guildId);
-
-    let modules = [
-        new RevenuesManager(config).load()
-    ]
-
-    if(guild) {
-        for(const e of modules) {
-            for(const i of e) {
-                guild.commands.create(
-                    i
-                ).then().catch(console.error);
-            }
-        }
-    }
+    new CommandsLoader(client).loadCommands();
+    new SQLTablesManager(config).loadTables();
 });
 
 client.on(`interactionCreate`, (interaction) => {
