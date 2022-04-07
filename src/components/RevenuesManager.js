@@ -3,6 +3,7 @@
 const { ModuleManager } = require("./ModuleManager.js");
 const { MessageEmbed } = require("discord.js");
 const { Database } = require("../database/Database.js");
+const { BinanceApi } = require("../Apis/BinanceApi.js");
 
 class RevenuesManager {
     constructor(config=null, interaction=null, client=null) {
@@ -10,6 +11,7 @@ class RevenuesManager {
         this.client = client;
         this.config = config;
         this.mm = new ModuleManager(client, config);
+        this.binance = new BinanceApi(config);
 
         // avoid crash due to missing unnecessary param
         if(config !== null) {
@@ -196,12 +198,14 @@ class RevenuesManager {
 
     }
 
+    //TODO: Add butten to see the details on each revenue. Stop if start typing.
     list() {
         // def command options content for easier usage
         let options = {
             month: this.interaction.options.getInteger("month")
         }
 
+        // index month for embed display
         let months = [
             "January", 
             "Febrary", 
@@ -220,14 +224,23 @@ class RevenuesManager {
         // check if month is valid
         if(options.month < 1 || options.month > 12) {
             return this.mm.error(this.interaction, `${this.interaction.member}, The month must be a number between 1 and 12.`);
-        };
+        }
 
+        // start pool connection to database (reduce the db latency)
         this.db.connection().getConnection(async (err, conn) => {
             if(err) throw err;
 
+            // query database to retrieve all the revenues.
             let Revenues = await this.db.query(conn, `SELECT * FROM dc_revenues`);
             let verifiedRevenues = [];
 
+            let revenuesStats = {
+                eurEarned: 0,
+                dollarEarned: 0,
+                eurRevenuesAmount: 0,
+            }
+
+            // Sort revenues in function of the input month.
             for(const e of Revenues) {
                 let month = new Date(e.date).getMonth();
                 if(options.month-1 === month) {
@@ -235,19 +248,58 @@ class RevenuesManager {
                 }
             }
 
+            // Sort revenus in function of currency
+            for(const e of verifiedRevenues) {
+                e.currency === "$" ? revenuesStats.dollarEarned += parseInt(e.amount) : revenuesStats.eurEarned += parseInt(e.amount);
+            }
+
+            // Retrieve the dollar conversion rate based on the Binance USDT (Tether). -- Reason: 1 USD === 1 USDT (Cryptocurrency indexed on the US dollar rate).
+            let dollarRate = await this.binance.currentCryptoData("EURUSDT");
+            revenuesStats.eurRevenuesAmount = (revenuesStats.eurEarned + (revenuesStats.dollarEarned * dollarRate.prevClosePrice))
 
             //display global infos and embed for each revenue.
             await this.interaction.reply(
                 {
                     ephemeral: false, 
-                    embed: [
+                    embeds: [
                         new MessageEmbed()
-                            .setDescription(
-                                "```" + `Here are the ${months[month]}'s Revenues!` + "```"
-                                )
+                            .setDescription("``` Here are the " + months[options.month] + "'s Revenues! ```")
+                            .addFields(
+                                {
+                                    name: "Total Earned in EUR",
+                                    value: "`" + `Total Earnings: ${revenuesStats.eurRevenuesAmount}€` + "`",
+                                    inline: true
+                                },
+                                {
+                                    name: '\u200B',
+                                    value: '\u200B',
+                                    inline: true
+                                },
+                                {
+                                    name: "Revenues Entry",
+                                    value: "`" + `Entry: ${verifiedRevenues.length}` + "`",
+                                    inline: true
+                                },
+                                {
+                                    name: "Earnings in EUR",
+                                    value:  "`" + `Total: ${revenuesStats.eurEarned}€` + "`",
+                                    inline: true
+                                },
+                                {
+                                    name: '\u200B',
+                                    value: '\u200B',
+                                    inline: true
+                                },
+                                {
+                                    name: "Earnings in USD",
+                                    value: "`" + `Total: ${revenuesStats.dollarEarned}$` + "`",
+                                    inline: true
+                                }
+                            )
                             .setThumbnail(this.interaction.guild.iconURL())
                             .setColor("GREEN")
-                        
+                            .setTimestamp()
+                            .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
                     ]
                 }
             )

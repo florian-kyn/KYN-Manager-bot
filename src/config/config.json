@@ -10,5 +10,10 @@
     "password": "123456789",
     "host": "localhost",
     "port": "3306"
+  },
+
+  "binance": {
+    "api_key": "sKI8fpnSzM9Uvcfe5mTOKa0avjHISPyFy85aO4p2Vxq5tNRlLb685lz3FnM6DlaJ",
+    "secret_key": "j25f4TE2tUpXlB02vXsSJtUCdNws3ntVsdFEHp57CYF2VsasGDDeczs3lkQYby3v"
   }
 }
