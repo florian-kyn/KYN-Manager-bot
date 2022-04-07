@@ -26,7 +26,6 @@ class Database {
     }
 
     checkConnectionState() { // method to check if the mysql connection state is efficient
-        this.tableCheckCreation();
         this.connection().query(`SHOW DATABASES`, (err) => {
             if(err) {
                 throw err;
