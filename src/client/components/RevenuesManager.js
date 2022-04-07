@@ -67,7 +67,15 @@ class RevenuesManager {
             },
             {
                 name: "revenue-list",
-                description: "Display a list of revenue"
+                description: "Display a list of revenue",
+                options: [
+                    {
+                        name: "month",
+                        description: "The number of the month.",
+                        required: true, 
+                        type: "INTEGER"
+                    }
+                ]
             }
         ];
     }
@@ -189,7 +197,63 @@ class RevenuesManager {
     }
 
     list() {
+        // def command options content for easier usage
+        let options = {
+            month: this.interaction.options.getInteger("month")
+        }
 
+        let months = [
+            "January", 
+            "Febrary", 
+            "March", 
+            "April", 
+            "May", 
+            "June", 
+            "July", 
+            "August", 
+            "September", 
+            "October", 
+            "November", 
+            "December"
+        ]
+
+        // check if month is valid
+        if(options.month < 1 || options.month > 12) {
+            return this.mm.error(this.interaction, `${this.interaction.member}, The month must be a number between 1 and 12.`);
+        };
+
+        this.db.connection().getConnection(async (err, conn) => {
+            if(err) throw err;
+
+            let Revenues = await this.db.query(conn, `SELECT * FROM dc_revenues`);
+            let verifiedRevenues = [];
+
+            for(const e of Revenues) {
+                let month = new Date(e.date).getMonth();
+                if(options.month-1 === month) {
+                    verifiedRevenues.push(e);
+                }
+            }
+
+
+            //display global infos and embed for each revenue.
+            await this.interaction.reply(
+                {
+                    ephemeral: false, 
+                    embed: [
+                        new MessageEmbed()
+                            .setDescription(
+                                "```" + `Here are the ${months[month]}'s Revenues!` + "```"
+                                )
+                            .setThumbnail(this.interaction.guild.iconURL())
+                            .setColor("GREEN")
+                        
+                    ]
+                }
+            )
+
+            this.db.connection().releaseConnection(conn);
+        });
     }
 }
 
