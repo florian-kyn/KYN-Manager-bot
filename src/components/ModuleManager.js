@@ -23,6 +23,16 @@ class ModuleManager{
             }
         )
     }
+
+    getDaysInCurrentMonth(month) {
+        const date = new Date(month);
+
+        return new Date(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            0
+        ).getDate();
+    }
 }
 
 module.exports = {
