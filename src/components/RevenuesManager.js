@@ -1,7 +1,7 @@
 //RevenueManager.js// -- Created By Florian Lepage 01/17/2022
 
 const { ModuleManager } = require("./ModuleManager.js");
-const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js");
+const { MessageEmbed, MessageActionRow, MessageButton, MessageAttachment} = require("discord.js");
 const { Database } = require("../database/Database.js");
 const { BinanceApi } = require("../Apis/BinanceApi.js");
 
@@ -73,8 +73,14 @@ class RevenuesManager {
                 options: [
                     {
                         name: "month",
-                        description: "The number of the month.",
+                        description: "The month you wish.",
                         required: true, 
+                        type: "INTEGER"
+                    },
+                    {
+                        name: "year",
+                        description: "The year you wish.",
+                        required: true,
                         type: "INTEGER"
                     }
                 ]
@@ -200,11 +206,11 @@ class RevenuesManager {
 
     }
 
-
     list() {
         // def command options content for easier usage
         let options = {
-            month: this.interaction.options.getInteger("month")
+            month: this.interaction.options.getInteger("month"),
+            year: this.interaction.options.getInteger("year")
         }
 
         // index month for embed display
@@ -265,7 +271,7 @@ class RevenuesManager {
             // add global revenue info to main embeds array
             let Embeds = [
                 new MessageEmbed()
-                    .setDescription("``` Here are the " + months[options.month] + "'s Revenues! ```")
+                    .setDescription("``` Here are the " + months[options.month-1] + "'s Revenues! ```")
                     .addFields(
                         {
                             name: "Total Earned in EUR",
@@ -310,14 +316,13 @@ class RevenuesManager {
             });
 
             // push to main embed each revenue page
-            for(const e of verifiedRevenues) {
+            for(let i = 0; verifiedRevenues.length > i; i++) {
                 Embeds.push(
                     new MessageEmbed()
-                        .setAuthor({name: "Revenue: " + e.id, iconURL: this.client.user.avatarURL()})
                         .addFields(
                             {
                                 name: "Customer",
-                                value: "`" + e.customer + "`",
+                                value: "`" + verifiedRevenues[i].customer + "`",
                                 inline: true
                             },
                             {
@@ -327,12 +332,12 @@ class RevenuesManager {
                             },
                             {
                                 name: "Project",
-                                value: "`" + e.project + "`",
+                                value: "`" + verifiedRevenues[i].project + "`",
                                 inline: true
                             },
                             {
                                 name: "Earnings",
-                                value:  "`" + `Total: ${e.amount}${e.currency}` + "`",
+                                value:  "`" + `Total: ${verifiedRevenues[i].amount}${verifiedRevenues[i].currency}` + "`",
                                 inline: true
                             },
                             {
@@ -342,19 +347,19 @@ class RevenuesManager {
                             },
                             {
                                 name: "Platform",
-                                value: "`" + e.platform + "`",
+                                value: "`" + verifiedRevenues[i].platform + "`",
                                 inline: true
                             },
                             {
                                 name: `Earned On`,
-                                value: `<t:${new Date(e.date).getTime() / 1000}>`,
+                                value: `<t:${new Date(verifiedRevenues[i].date).getTime() / 1000}>`,
                                 inline: false
                             }
                         )
                         .setThumbnail(this.interaction.guild.iconURL())
                         .setColor("GREEN")
                         .setTimestamp()
-                        .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                        .setFooter({text: `Page: ${i+1} - Rev id: ${verifiedRevenues[i].id}`, iconURL: this.interaction.guild.iconURL()})
                 )
             }
 
@@ -391,6 +396,12 @@ class RevenuesManager {
                                     .setEmoji("<:image3:894240359817826335>")
                                     .setStyle("SUCCESS")
                             )
+                            .addComponents(
+                                new MessageButton()
+                                    .setCustomId(`chart_${this.interaction.member.user.id}`)
+                                    .setEmoji("📊")
+                                    .setStyle("PRIMARY")
+                            )
                     ]
                 }
             );
@@ -412,12 +423,15 @@ class RevenuesManager {
                                 {
                                     embeds: [
                                         Embeds[pageId]
+                                    ],
+                                    files: [
+
                                     ]
                                 }
                             ).then().catch(console.error);
-
-                            await b.deferUpdate()
                         }
+                        await b.deferUpdate()
+
                         break;
                     case `list_prev_${this.interaction.member.user.id}`:
                         if(pageId-1 >= 0) {
@@ -427,12 +441,15 @@ class RevenuesManager {
                                 {
                                     embeds: [
                                         Embeds[pageId]
+                                    ],
+                                    files: [
+
                                     ]
                                 }
                             ).then().catch(console.error);
-
-                            await b.deferUpdate()
                         }
+                        await b.deferUpdate()
+
                         break;
                     case `list_first_${this.interaction.member.user.id}`:
                         pageId = 1
@@ -441,6 +458,9 @@ class RevenuesManager {
                             {
                                 embeds: [
                                     Embeds[pageId]
+                                ],
+                                files: [
+
                                 ]
                             }
                         ).then().catch(console.error);
@@ -455,6 +475,36 @@ class RevenuesManager {
                             {
                                 embeds: [
                                     Embeds[pageId]
+                                ],
+                                files: [
+
+                                ]
+                            }
+                        ).then().catch(console.error);
+
+                        await b.deferUpdate()
+
+                        break;
+                    case `chart_${this.interaction.member.user.id}`:
+                        const monthDay = this.mm.getDaysInCurrentMonth(new Date(options.year, options.month-1));
+
+                        let buffer = await this.createGraph(verifiedRevenues, monthDay, months[options.month-1]);
+
+                        let file = new MessageAttachment(buffer, "chart.png")
+
+                        let embed = Embeds[0]
+
+                        embed.image = {
+                            url: "attachment://chart.png",
+                        }
+
+                        await buttonMsg.edit(
+                            {
+                                embeds: [
+                                    embed
+                                ],
+                                files: [
+                                    file
                                 ]
                             }
                         ).then().catch(console.error);
@@ -468,6 +518,123 @@ class RevenuesManager {
             // close pool connection
             this.db.connection().releaseConnection(conn);
         });
+    }
+
+    async createGraph(revenues, day, month) {
+        const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+        const width = 1280; //px
+        const height = 720; //px
+        const backgroundColour = '#2f3136';
+        const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour});
+
+        let labels = [];
+        let vData = [];
+
+        // display day number with proper suffix
+        for(let i = 1; day >= i; i++) {
+            switch (i) {
+                case 1:
+                    labels.push("1st")
+                    break;
+                case 2:
+                    labels.push("2nd")
+                    break;
+                case 3:
+                    labels.push("3rd")
+                    break;
+                case 21:
+                    labels.push("21st")
+                    break;
+                case 22:
+                    labels.push("22nd")
+                    break;
+                case 23:
+                    labels.push("23rd")
+                    break;
+                case 31:
+                    labels.push("31st")
+                    break;
+                default:
+                    labels.push(`${i}th`);
+                    break;
+            }
+        }
+
+        // Step1: sum of earning per day each day
+        let dataExpanded = [];
+        for(const e of revenues) {
+            let date = new Date(e.date);
+            if(!dataExpanded.some(fn => fn.date === date.getDate())) {
+                dataExpanded.push(
+                    {
+                        amount: parseInt(e.amount),
+                        date: date.getDate(),
+                    }
+                )
+            } else {
+                dataExpanded.find(fn => fn.date === date.getDate()).amount += parseInt(e.amount);
+            }
+        }
+
+        // step2: sort data & push validated earning on each day
+        for(let i = 1; day >= i; i++) {
+            if(dataExpanded.some(fn => fn.date === i)) {
+                vData.push(dataExpanded.find(fn => fn.date === i).amount);
+            } else {
+                vData.push(0);
+            }
+        }
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: `${month}'s revenues`,
+                data: vData,
+                backgroundColor: [
+                    'rgba(46, 204, 113, 0.2)',
+                ],
+                borderColor: [
+                    'rgb(46, 204, 113, 0.4)',
+                ],
+                borderWidth: 0.5
+            }]
+        };
+
+        const config = {
+            type: 'bar',
+            data: data,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: "#ffffff",
+                            font: {
+                                size: 18
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: "#ffffff",
+                            font: {
+                                size: 15
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            //color: 'rgb(255, 255, 255)'
+                        }
+                    }
+                }
+            },
+        };
+
+        return await chartJSNodeCanvas.renderToBuffer(config);
     }
 }
 
