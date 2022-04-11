@@ -1,7 +1,7 @@
 //RevenueManager.js// -- Created By Florian Lepage 01/17/2022
 
 const { ModuleManager } = require("./ModuleManager.js");
-const { MessageEmbed } = require("discord.js");
+const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js");
 const { Database } = require("../database/Database.js");
 const { BinanceApi } = require("../Apis/BinanceApi.js");
 
@@ -84,16 +84,18 @@ class RevenuesManager {
 
     selector() {
         if(this.interaction.isCommand()) {
-            switch (this.interaction.command.name) {
-                case "revenue-add":
-                    this.add();
-                    break;
-                case "revenue-remove":
-                    this.remove();
-                    break;
-                case "revenue-list":
-                    this.list();
-                    break;
+            if(this.interaction.command !== null) {
+                switch (this.interaction.command.name) {
+                    case "revenue-add":
+                        this.add();
+                        break;
+                    case "revenue-remove":
+                        this.remove();
+                        break;
+                    case "revenue-list":
+                        this.list();
+                        break;
+                }
             }
         }
     }
@@ -198,7 +200,7 @@ class RevenuesManager {
 
     }
 
-    //TODO: Add butten to see the details on each revenue. Stop if start typing.
+
     list() {
         // def command options content for easier usage
         let options = {
@@ -257,53 +259,213 @@ class RevenuesManager {
             let dollarRate = await this.binance.currentCryptoData("EURUSDT");
             revenuesStats.eurRevenuesAmount = (revenuesStats.eurEarned + (revenuesStats.dollarEarned * dollarRate.prevClosePrice))
 
-            //display global infos and embed for each revenue.
+            //set first page to 0 (revenue stats)
+            let pageId = 0;
+
+            // add global revenue info to main embeds array
+            let Embeds = [
+                new MessageEmbed()
+                    .setDescription("``` Here are the " + months[options.month] + "'s Revenues! ```")
+                    .addFields(
+                        {
+                            name: "Total Earned in EUR",
+                            value: "`" + `Total Earnings: ${revenuesStats.eurRevenuesAmount}€` + "`",
+                            inline: true
+                        },
+                        {
+                            name: '\u200B',
+                            value: '\u200B',
+                            inline: true
+                        },
+                        {
+                            name: "Revenues Entry",
+                            value: "`" + `Entry: ${verifiedRevenues.length}` + "`",
+                            inline: true
+                        },
+                        {
+                            name: "Earnings in EUR",
+                            value:  "`" + `Total: ${revenuesStats.eurEarned}€` + "`",
+                            inline: true
+                        },
+                        {
+                            name: '\u200B',
+                            value: '\u200B',
+                            inline: true
+                        },
+                        {
+                            name: "Earnings in USD",
+                            value: "`" + `Total: ${revenuesStats.dollarEarned}$` + "`",
+                            inline: true
+                        }
+                    )
+                    .setThumbnail(this.interaction.guild.iconURL())
+                    .setColor("GREEN")
+                    .setTimestamp()
+                    .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+            ];
+
+            // sort revenues
+            verifiedRevenues.sort((a, b) => {
+                return new Date(a.date).getTime()  - new Date(b.date).getTime();
+            });
+
+            // push to main embed each revenue page
+            for(const e of verifiedRevenues) {
+                Embeds.push(
+                    new MessageEmbed()
+                        .setAuthor({name: "Revenue: " + e.id, iconURL: this.client.user.avatarURL()})
+                        .addFields(
+                            {
+                                name: "Customer",
+                                value: "`" + e.customer + "`",
+                                inline: true
+                            },
+                            {
+                                name: '\u200B',
+                                value: '\u200B',
+                                inline: true
+                            },
+                            {
+                                name: "Project",
+                                value: "`" + e.project + "`",
+                                inline: true
+                            },
+                            {
+                                name: "Earnings",
+                                value:  "`" + `Total: ${e.amount}${e.currency}` + "`",
+                                inline: true
+                            },
+                            {
+                                name: '\u200B',
+                                value: '\u200B',
+                                inline: true
+                            },
+                            {
+                                name: "Platform",
+                                value: "`" + e.platform + "`",
+                                inline: true
+                            },
+                            {
+                                name: `Earned On`,
+                                value: `<t:${new Date(e.date).getTime() / 1000}>`,
+                                inline: false
+                            }
+                        )
+                        .setThumbnail(this.interaction.guild.iconURL())
+                        .setColor("GREEN")
+                        .setTimestamp()
+                        .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                )
+            }
+
+            // send reply with arrow button. (first page = stats)
             await this.interaction.reply(
                 {
-                    ephemeral: false, 
+                    ephemeral: false,
                     embeds: [
-                        new MessageEmbed()
-                            .setDescription("``` Here are the " + months[options.month] + "'s Revenues! ```")
-                            .addFields(
-                                {
-                                    name: "Total Earned in EUR",
-                                    value: "`" + `Total Earnings: ${revenuesStats.eurRevenuesAmount}€` + "`",
-                                    inline: true
-                                },
-                                {
-                                    name: '\u200B',
-                                    value: '\u200B',
-                                    inline: true
-                                },
-                                {
-                                    name: "Revenues Entry",
-                                    value: "`" + `Entry: ${verifiedRevenues.length}` + "`",
-                                    inline: true
-                                },
-                                {
-                                    name: "Earnings in EUR",
-                                    value:  "`" + `Total: ${revenuesStats.eurEarned}€` + "`",
-                                    inline: true
-                                },
-                                {
-                                    name: '\u200B',
-                                    value: '\u200B',
-                                    inline: true
-                                },
-                                {
-                                    name: "Earnings in USD",
-                                    value: "`" + `Total: ${revenuesStats.dollarEarned}$` + "`",
-                                    inline: true
-                                }
+                        Embeds[0]
+                    ],
+                    components: [
+                        new MessageActionRow()
+                            .addComponents(
+                                new MessageButton()
+                                    .setCustomId(`list_first_${this.interaction.member.user.id}`)
+                                    .setEmoji("<:image0:894240410917044234>")
+                                    .setStyle("SUCCESS")
                             )
-                            .setThumbnail(this.interaction.guild.iconURL())
-                            .setColor("GREEN")
-                            .setTimestamp()
-                            .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                            .addComponents(
+                                new MessageButton()
+                                    .setCustomId(`list_prev_${this.interaction.member.user.id}`)
+                                    .setEmoji("<:image1:894240394164973618>")
+                                    .setStyle("SUCCESS")
+                            )
+                            .addComponents(
+                                new MessageButton()
+                                    .setCustomId(`list_next_${this.interaction.member.user.id}`)
+                                    .setEmoji("<:image2:894240377446498346>")
+                                    .setStyle("SUCCESS")
+                            )
+                            .addComponents(
+                                new MessageButton()
+                                    .setCustomId(`list_last_${this.interaction.member.user.id}`)
+                                    .setEmoji("<:image3:894240359817826335>")
+                                    .setStyle("SUCCESS")
+                            )
                     ]
                 }
-            )
+            );
 
+            // fetch reply message for collector
+            let buttonMsg = await this.interaction.fetchReply();
+
+            // setup button collector
+            const collector = buttonMsg.createMessageComponentCollector((button) => button.clicker.user.id === this.interaction.member.user.id);
+
+            // button collector
+            collector.on("collect", async (b) => {
+                switch (b.customId) {
+                    case `list_next_${this.interaction.member.user.id}`:
+                        if(pageId+1 <= (Embeds.length-1)) {
+                            pageId++
+
+                            await buttonMsg.edit(
+                                {
+                                    embeds: [
+                                        Embeds[pageId]
+                                    ]
+                                }
+                            ).then().catch(console.error);
+
+                            await b.deferUpdate()
+                        }
+                        break;
+                    case `list_prev_${this.interaction.member.user.id}`:
+                        if(pageId-1 >= 0) {
+                            pageId--
+
+                            await buttonMsg.edit(
+                                {
+                                    embeds: [
+                                        Embeds[pageId]
+                                    ]
+                                }
+                            ).then().catch(console.error);
+
+                            await b.deferUpdate()
+                        }
+                        break;
+                    case `list_first_${this.interaction.member.user.id}`:
+                        pageId = 1
+
+                        await buttonMsg.edit(
+                            {
+                                embeds: [
+                                    Embeds[pageId]
+                                ]
+                            }
+                        ).then().catch(console.error);
+
+                        await b.deferUpdate()
+
+                        break;
+                    case `list_last_${this.interaction.member.user.id}`:
+                        pageId = Embeds.length - 1
+
+                        await buttonMsg.edit(
+                            {
+                                embeds: [
+                                    Embeds[pageId]
+                                ]
+                            }
+                        ).then().catch(console.error);
+
+                        await b.deferUpdate()
+
+                        break;
+                }
+            });
+
+            // close pool connection
             this.db.connection().releaseConnection(conn);
         });
     }
