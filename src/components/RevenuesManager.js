@@ -64,8 +64,16 @@ class RevenuesManager {
                 ]
             },
             {
-                name: "revenue-del",
-                description: "Delete an existing revenue"
+                name: "revenue-remove",
+                description: "Delete an existing revenue",
+                options: [
+                    {
+                        name: "id",
+                        description: "The id of the revenue you wish to remove",
+                        required: true,
+                        type: "INTEGER"
+                    }
+                ]
             },
             {
                 name: "revenue-list",
@@ -203,8 +211,73 @@ class RevenuesManager {
     }
 
     remove() {
+        // def command options content for easier usage
+        let options = {
+            revId: this.interaction.options.getInteger("id"),
+        }
 
-    }
+        // start pool connection to database (reduce the db latency)
+        this.db.connection().getConnection(async (err, conn) => {
+            if (err) throw err;
+
+            let rev = await this.db.query(conn, `SELECT * FROM dc_revenues WHERE id = "${options.revId}"`);
+
+            if(rev.length < 1) return this.mm.error(this.interaction, `${this.interaction.member}, The id you entered is has not been found in the database.`);
+
+            await this.db.query(conn, `DELETE FROM dc_revenues WHERE id = "${options.revId}"`);
+
+            await this.interaction.reply({
+                ephemeral: false,
+                embeds: [
+                    new MessageEmbed()
+                        .setThumbnail(this.interaction.member.user.avatarURL())
+                        .setDescription("```You just removed a revenue from the database.!\nHere are the details.```")
+                        .setColor("ORANGE")
+                        .addFields(
+                            {
+                                name: `Amount`,
+                                value: `${"`" + `${rev[0].amount}${rev[0].currency}` + "`"}`,
+                                inline: true
+                            },
+                            {
+                                name: '\u200B',
+                                value: '\u200B',
+                                inline: true
+                            },
+                            {
+                                name: "Platform",
+                                value: "`" + rev[0].platform + "`",
+                                inline: true
+                            },
+                            {
+                                name: "Customer",
+                                value: "`" + rev[0].customer + "`",
+                                inline: true
+                            },
+                            {
+                                name: '\u200B',
+                                value: '\u200B',
+                                inline: true
+                            },
+                            {
+                                name: "Project",
+                                value: "`" + rev[0].project + "`",
+                                inline: true
+                            },
+                            {
+                                name: `Added on`,
+                                value: `<t:${new Date(rev[0].date) / 1000}>`,
+                                inline: false
+                            }
+                        )
+                        .setTimestamp()
+                        .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                ]
+            });
+
+            this.db.connection().releaseConnection(conn);
+        });
+    };
 
     list() {
         // def command options content for easier usage
@@ -627,7 +700,10 @@ class RevenuesManager {
                     legend: {
                         display: true,
                         labels: {
-                            //color: 'rgb(255, 255, 255)'
+                            color: "#ffffff",
+                            font: {
+                                size: 30
+                            }
                         }
                     }
                 }
