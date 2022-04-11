@@ -9,6 +9,8 @@
   "author": "Florian Lepage*",
   "license": "ISC",
   "dependencies": {
+    "chart.js": "^3.7.1",
+    "chartjs-node-canvas": "^4.1.6",
     "discord.js": "^13.6.0",
     "mysql2": "^2.3.3",
     "needle": "^3.0.0"
