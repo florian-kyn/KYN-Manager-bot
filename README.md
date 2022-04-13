@@ -40,6 +40,7 @@
 /revenu-add
 ``` 
 <img alt="RBS Logo" src="src/Assets/discord_example2.gif" width="350"/> 
+
 ```js
 /revenu-remove
 ``` 
