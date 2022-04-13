@@ -46,4 +46,11 @@
 ``` 
 <img alt="RBS Logo" src="src/Assets/discord_example3.gif" width="350"/> 
 
+## Setup 
 
+> To setup this bot, Please make sure MySql and Node.js 16.14 or higher is installed.
+
+#### Get and replace the bot token
+1. First of all, go to the [Discord Developper Portal](https://discordapp.com/developers/applications/)
+2. Create a new application
+3. Retrieve your token by ["clicking on bot"](https://cdn.writebots.com/wp-content/uploads/2021/12/discord-bot-token-8.jpg.webp), then click on ["Add Bot"](https://cdn.writebots.com/wp-content/uploads/2021/12/discord-bot-token-9.jpg.webp) and finally ["Yes do it"](https://cdn.writebots.com/wp-content/uploads/2021/12/discord-bot-token-9.jpg.webp).
