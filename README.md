@@ -34,5 +34,15 @@
 ```js
 /revenu-list
 ``` 
-<img alt="RBS Logo" src="src/Assets/discord_example.gif" width="500"/> <img alt="RBS Logo" src="src/Assets/chart.png" width="777"/> 
+<img alt="RBS Logo" src="src/Assets/discord_example.gif" width="350"/> 
+
+```js
+/revenu-add
+``` 
+<img alt="RBS Logo" src="src/Assets/discord_example2.gif" width="350"/> 
+```js
+/revenu-remove
+``` 
+<img alt="RBS Logo" src="src/Assets/discord_example3.gif" width="350"/> 
+
 
