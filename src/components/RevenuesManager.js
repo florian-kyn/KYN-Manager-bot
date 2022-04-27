@@ -335,8 +335,8 @@ class RevenuesManager {
             }
 
             // Retrieve the dollar conversion rate based on the Binance USDT (Tether). -- Reason: 1 USD === 1 USDT (Cryptocurrency indexed on the US dollar rate).
-            let dollarRate = await this.binance.currentCryptoData("EURUSDT");
-            revenuesStats.eurRevenuesAmount = (revenuesStats.eurEarned + (revenuesStats.dollarEarned * dollarRate.prevClosePrice))
+            let dollarRate = await this.binance.currentCryptoData("USDTEUR");
+            revenuesStats.eurRevenuesAmount = (revenuesStats.eurEarned + (revenuesStats.dollarEarned * 0.91))
 
             //set first page to 0 (revenue stats)
             let pageId = 0;
@@ -348,7 +348,7 @@ class RevenuesManager {
                     .addFields(
                         {
                             name: "Total Earned in EUR",
-                            value: "`" + `Total Earnings: ${revenuesStats.eurRevenuesAmount}€` + "`",
+                            value: "`" + `Total Earnings: ${Math.floor(revenuesStats.eurRevenuesAmount)}€` + "`",
                             inline: true
                         },
                         {
